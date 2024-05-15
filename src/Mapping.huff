@@ -1,0 +1,98 @@
+#define function addAmount(address, uint256) nonpayable returns()
+#define function getAmount(address) nonpayable returns(uint256)
+
+#define constant AMOUNT_MAP = FREE_STORAGE_POINTER()
+
+#define macro MAIN() = {
+    callvalue                           // [callvalue]
+    iszero                              // [(callvalue == 0)]
+    run                                 // [run, (callvalue == 0)]
+    jumpi                               // []
+
+    fail:
+        0x00                            // [0x00]
+        0x00                            // [0x00, 0x00]
+        revert                          // []
+    
+    run:
+        RUN()
+}
+
+#define macro RUN() = {
+    0x00                                // [0x00]
+    calldataload                        // [data[0x00]]
+    0xe0                                // [0xe0, data[0x00]]
+    shr                                 // [call_selector]
+    dup1                                // [call_selector, call_selector]
+    __FUNC_SIG(addAmount)               // [addAmount, call_selector, call_selector]
+    eq                                  // [(addAmount == call_selector), call_selector]
+    add_amount                          // [add_amount, (addAmount == call_selector), call_selector]
+    jumpi                               // [call_selector]
+    __FUNC_SIG(getAmount)               // [getAmount, call_selector]
+    eq                                  // [(getAmount == call_selector)]
+    get_amount                          // [get_amount, (getAmount == call_selector)]
+    jumpi                               // []
+    fail                                // [fail]
+    jump                                // []
+    
+    add_amount:
+        ADD_AMOUNT()
+    
+    get_amount:
+        GET_AMOUNT()
+}
+
+#define macro ADD_AMOUNT() = {
+    0x44                                // [0x44]
+    calldatasize                        // [size, 0x44]
+    xor                                 // [(size ^ 0x44)]
+    fail                                // [fail, (size ^ 0x44)]
+    jumpi                               // []
+    0x04                                // [0x04]
+    calldataload                        // [address]
+    GET_STORAGE_SLOT()                  // [storage_slot]
+    dup1                                // [storage_slot, storage_slot]
+    sload                               // [sload[storage_slot], storage_slot]
+    dup1                                // [sload[storage_slot], sload[storage_slot], storage_slot]
+    0x24                                // [0x24, sload[storage_slot], sload[storage_slot], storage_slot]
+    calldataload                        // [amount, sload[storage_slot], sload[storage_slot], storage_slot]
+    add                                 // [(amount + sload[storage_slot]), sload[storage_slot], storage_slot]
+    dup1                                // [(amount + sload[storage_slot]), (amount + sload[storage_slot]), sload[storage_slot], storage_slot]
+    swap2                               // [sload[storage_slot], (amount + sload[storage_slot]), (amount + sload[storage_slot]), storage_slot]
+    gt                                  // [(sload[storage_slot] > (amount + sload[storage_slot])), (amount + sload[storage_slot]), storage_slot]
+    fail                                // [fail, (sload[storage_slot] > (amount + sload[storage_slot])), (amount + sload[storage_slot]), storage_slot]
+    jumpi                               // [(amount + sload[storage_slot]), storage_slot]
+    swap1                               // [storage_slot, (amount + sload[storage_slot])]
+    sstore                              // []
+    stop
+}
+
+#define macro GET_AMOUNT() = {
+    0x24                                // [0x44]
+    calldatasize                        // [size, 0x44]
+    xor                                 // [(size ^ 0x44)]
+    fail                                // [fail, (size ^ 0x44)]
+    jumpi                               // []
+    0x04                                // [0x04]
+    calldataload                        // [address]
+    GET_STORAGE_SLOT()                  // [storage_slot]
+    sload                               // [sload[storage_slot]]
+    0x00                                // [0x00, sload[storage_slot]]
+    mstore                              // []
+    0x20                                // [0x20]
+    0x00                                // [0x00, 0x20]
+    return                              // []
+}
+
+#define macro GET_STORAGE_SLOT() = takes(1) returns (1) {
+    // Initial stack                    // [address]
+    0x00                                // [0x00, address]
+    mstore                              // []
+    [AMOUNT_MAP]                        // [AMOUNT_MAP]
+    0x20                                // [0x20, AMOUNT_MAP]
+    mstore                              // []
+    0x40                                // [0x40]
+    0x00                                // [0x00, 0x40]
+    sha3                                // [storage_slot]
+}
+
